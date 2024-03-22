@@ -24,6 +24,15 @@ def parse_args():
         "string2", help="second string on which to calculate sequence alignment"
     )
     parser.add_argument(
+        "-a",
+        "--align",
+        action="store_true",
+        default=False,
+        help="""if true, gap at the beginning and end of the sequences
+        have a penalty of 0.
+        """,
+    )
+    parser.add_argument(
         "-w",
         "--weights",
         nargs=3,
@@ -34,6 +43,20 @@ def parse_args():
     )
 
     args = parser.parse_args()
+    invalid_weights = False
+
+    if int(args.weights[0]) > 0:
+        invalid_weights = True
+        print("error: invalid weight. Gap penalty must be non-positive.")
+    if int(args.weights[1]) > 0:
+        invalid_weights = True
+        print("error: invalid weight. Mismatch penalty must be non-positive.")
+    if int(args.weights[2]) < 0:
+        invalid_weights = True
+        print("error: invalid weight. Match score must be non-negative.")
+
+    if invalid_weights:
+        exit(1)
 
     return args
 
@@ -71,9 +94,21 @@ def find_previous(list, row, col) -> tuple[int, list[tuple[int, int]]]:
     return max_value, coords
 
 
-def compute(word1, word2, weights) -> tuple[list[list], dict, int]:
+def compute(word1, word2, weights, align) -> tuple[list[list], dict, int]:
     """Core function that builds the Needleman-Wunsch matrix, which tracks the global
     sequence alignments for every substring of the strings given in input."""
+
+    def is_move_on_margin(word1, word2, row1, col1, row2, col2):
+        """Used when 'align' option enabled. Returns true if the move is on the margin
+        of the matrix, false otherwise."""
+        if row1 == row2:
+            if row1 == 1 or row1 == len(word1) - 1:
+                return True
+        elif col1 == col2:
+            if col1 == 1 or col1 == len(word2) - 1:
+                return True
+        else:
+            return False
 
     word1 = " " + "-" + word1
     word2 = " " + "-" + word2
@@ -93,9 +128,27 @@ def compute(word1, word2, weights) -> tuple[list[list], dict, int]:
 
             options = []
             # adds the cost of coming from top
-            options.append(matrix[row - 1][col] + weights["gap"] if row > 1 else None)
+            options.append(
+                matrix[row - 1][col]
+                + (
+                    0
+                    if align and is_move_on_margin(word1, word2, row, col, row - 1, col)
+                    else weights["gap"]
+                )
+                if row > 1
+                else None
+            )
             # adds the cost of coming from left
-            options.append(matrix[row][col - 1] + weights["gap"] if col > 1 else None)
+            options.append(
+                matrix[row][col - 1]
+                + (
+                    0
+                    if align and is_move_on_margin(word1, word2, row, col, row, col - 1)
+                    else weights["gap"]
+                )
+                if col > 1
+                else None
+            )
             # adds the cost (or reward) of coming from top-left
             if row > 1 and col > 1:
                 penalty = (
@@ -156,7 +209,7 @@ def print_results(matrix, result, solutions) -> None:
 
     print("possible solutions:")  # calculated solutions
     for i, solution in enumerate(solutions):
-        print(f"{i + 1}  --> \t", end="")
+        print(f"{i + 1} -> \t", end="")
         for c in solution[0]:
             print(f"{c} ", end="")
         print("\n\t", end="")
@@ -172,7 +225,7 @@ def print_results(matrix, result, solutions) -> None:
         for c in solution[1]:
             print(f"{c} ", end="")
 
-        print()
+        print(end="\n\n")
 
     return
 
@@ -189,7 +242,9 @@ def __main__() -> None:
         int(arg) for arg in args.weights
     ]
 
-    matrix, previous, result = compute(word1, word2, weights)
+    align = args.align
+
+    matrix, previous, result = compute(word1, word2, weights, align)
     solutions = build_solutions(matrix, previous, len(word1) + 1, len(word2) + 1)
 
     print_results(matrix, result, solutions)
