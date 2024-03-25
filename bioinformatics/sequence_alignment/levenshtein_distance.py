@@ -77,6 +77,9 @@ def compute_matrix(word1, word2, weights):
     for index, row in enumerate(matrix):  # adds first as first matrix column
         row[0] = word1[index]
 
+    for row in matrix:
+        print(row)
+
     for row in range(1, len(word1)):
         for col in range(1, len(word2)):
             if row == col == 1:
