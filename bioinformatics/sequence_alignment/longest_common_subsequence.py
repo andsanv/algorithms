@@ -1,6 +1,23 @@
 import argparse as ap
-import random
 
+"""
+A longest common subsequence (LCS) is the longest subsequence common to all
+sequences in a set of sequences (often just two sequences).
+
+For more information: https://en.wikipedia.org/wiki/Longest_common_subsequence
+
+
+An alternative defintion of LCS that allows to compute the LENGTH of the LCS is the following: 
+def compute_lcs(word1, word2):
+    if word1 == "" or word2 == "":
+        return 0
+
+    return max(
+        compute_lcs(word1, word2[:-1]), # horizontal move
+        compute_lcs(word1[:-1], word2), # vertical move
+        compute_lcs(word1[:-1], word2[:-1]) + (1 if word1[-1] == word2[-1] else 0)  # diagonal move
+    )
+"""
 
 
 def parse_args():
@@ -46,7 +63,9 @@ def compute_matrix(word1, word2):
             options = {}
             # for each direction, adds 1 if the characters are equal, 0 otherwise
             if row > 1:
-                options[int(matrix[row - 1][col]) + (1 if word1[row] == word2[col] else 0)] = [(row - 1, col)]
+                options[
+                    int(matrix[row - 1][col]) + (1 if word1[row] == word2[col] else 0)
+                ] = [(row - 1, col)]
             if col > 1:
                 val = int(matrix[row][col - 1]) + (1 if word1[row] == word2[col] else 0)
                 if val in options:
@@ -54,40 +73,42 @@ def compute_matrix(word1, word2):
                 else:
                     options[val] = [(row, col - 1)]
             if row > 1 and col > 1:
-                val = int(matrix[row - 1][col - 1]) + (1 if word1[row] == word2[col] else 0)
+                val = int(matrix[row - 1][col - 1]) + (
+                    1 if word1[row] == word2[col] else 0
+                )
                 if val in options:
                     options[val].append((row - 1, col - 1))
                 else:
-                    options[val] = [(row - 1, col - 1)]    
+                    options[val] = [(row - 1, col - 1)]
 
+            # we choose the direction from which we have the best case (maximum lcs length)
             max_value = max(options)
-            prev = options[max_value]
+            # saving only the diagonal move is present, as saving more is unnecessary
+            previous[(row, col)] = (
+                (row - 1, col - 1)
+                if (row - 1, col - 1) in options[max_value]
+                else options[max_value][0]
+            )
 
-            previous[(row, col)] = prev
-            matrix[row][col] = max_value # lcs is defined as "best case" -> max
+            matrix[row][col] = max_value  # lcs is defined as "longest" -> max
 
     return matrix, previous
 
 
-def compute_lcs(word1, word2):
-    if word1 == "" or word2 == "":
-        return 0
-
-    return max(
-        compute_lcs(word1, word2[:-1]),
-        compute_lcs(word1[:-1], word2),
-        compute_lcs(word1[:-1], word2[:-1]) + (1 if word1[-1] == word2[-1] else 0)
-    )
-
-
 def build_solution(matrix, previous, row, col):
-    if row == col == 1:
+    """Function that builds the solution given the LCS matrix and the "previous" dictionary as input."""
+    if row == col == 1:  # base case
         return ""
-    
-    prev = (row - 1, col - 1) if (row - 1, col - 1) in previous[(row, col)] else previous[(row, col)][0]
-    
+
+    prev = previous[(row, col)]
+
+    # recursive step
     return build_solution(matrix, previous, prev[0], prev[1]) + (
-        matrix[0][col] if prev[0] == row - 1 and prev[1] == col - 1 and matrix[prev[0]][prev[1]] == matrix[row][col] - 1 else "" 
+        matrix[0][col]
+        if prev[0] == row - 1
+        and prev[1] == col - 1
+        and matrix[prev[0]][prev[1]] == matrix[row][col] - 1
+        else ""
     )
 
 
@@ -98,23 +119,22 @@ def __main__():
         args.string2.upper(),
     )  # strings on which to compute algorithm
 
-    # matrix, lcs = (
-    #     compute_matrix(word1, word2)
-    #     if args.verbose
-    #     else [None, compute_lcs(word1, word2)]
-    # )
-
     matrix, previous = compute_matrix(word1, word2)
-
     solution = build_solution(matrix, previous, len(word1) + 1, len(word2) + 1)
 
-    print(f"longest commons subsequence: \"{solution}\"")
+    # output management
+    if args.verbose:
+        print("LCS matrix:")
+        for row in matrix:
+            for element in row:
+                if type(element) == str or element >= 0:
+                    print(end=" ")
+                print(f"{element}\t", end="")
+            print()
 
-    # for row in matrix:
-    #     print(row)
+        print()
 
-    # for key, val in previous.items():
-    #     print(key, val, sep=": ")
+    print(f'longest common subsequence: "{solution}"')
 
 
 __main__()
