@@ -61,12 +61,14 @@ def parse_args():
     return args
 
 
-def find_previous(list, row, col) -> tuple[int, list[tuple[int, int]]]:
+def find_previous(
+    list: list[int], row: int, col: int
+) -> tuple[int, list[tuple[int, int]]]:
     """Allows to find relationships between different cells of the matrix, which
     are used for backtracking. That's how solutions can be found after computation.
 
     Given a list of partial results and the coordinates of a cell, finds the
-    maximum of those results and adds to the list to return the related coordinates.
+    maximum of those results and adds the related coordinates to the returned list.
     """
 
     if list == None or len(list) == 0:
@@ -94,11 +96,15 @@ def find_previous(list, row, col) -> tuple[int, list[tuple[int, int]]]:
     return max_value, coords
 
 
-def compute(word1, word2, weights, align) -> tuple[list[list], dict, int]:
+def compute(
+    word1: str, word2: str, weights: list[int], align: bool
+) -> tuple[list[list], dict[tuple[int, int], list[tuple[int, int]]], int]:
     """Core function that builds the Needleman-Wunsch matrix, which tracks the global
     sequence alignments for every substring of the strings given in input."""
 
-    def is_move_on_margin(word1, word2, row1, col1, row2, col2):
+    def is_move_on_margin(
+        word1: str, word2: str, row1: int, col1: int, row2: int, col2: int
+    ) -> bool:
         """Used when 'align' option enabled. Returns true if the move is on the margin
         of the matrix, false otherwise."""
         if row1 == row2:
@@ -166,7 +172,12 @@ def compute(word1, word2, weights, align) -> tuple[list[list], dict, int]:
     return (matrix, previous, matrix[-1][-1])
 
 
-def build_solutions(matrix, previous, row, col) -> list[list[str]]:
+def build_solutions(
+    matrix: list[list],
+    previous: dict[tuple[int, int], list[tuple[int, int]]],
+    row: int,
+    col: int,
+) -> list[list[str]]:
     """Creates a visual representation of the distances between two words.
     Solutions may be multiple."""
 
@@ -194,7 +205,7 @@ def build_solutions(matrix, previous, row, col) -> list[list[str]]:
     return solutions
 
 
-def print_results(matrix, result, solutions) -> None:
+def print_results(matrix: list[list], result: int, solutions: list[list[str]]) -> None:
     """Auxiliary function used to format terminal output."""
 
     print(f"global sequence alignment matrix:")  # computed matrix

@@ -39,7 +39,7 @@ def parse_args():
     return args
 
 
-def compute_matrix(word1, word2):
+def compute_matrix(word1: str, word2: str) -> list[list]:
     """Computes a matrix that tracks the longest common subsequence
     between every two substrings."""
 
@@ -95,7 +95,12 @@ def compute_matrix(word1, word2):
     return matrix, previous
 
 
-def build_solution(matrix, previous, row, col):
+def build_solution(
+    matrix: list[list],
+    previous: dict[tuple[int, int], tuple[int, int]],
+    row: int,
+    col: int,
+) -> str:
     """Function that builds the solution given the LCS matrix and the "previous" dictionary as input."""
     if row == col == 1:  # base case
         return ""
@@ -112,7 +117,7 @@ def build_solution(matrix, previous, row, col):
     )
 
 
-def __main__():
+def __main__() -> None:
     args = parse_args()  # argument parsing
     word1, word2 = (
         args.string1.upper(),
@@ -135,6 +140,8 @@ def __main__():
         print()
 
     print(f'longest common subsequence: "{solution}"')
+
+    return
 
 
 __main__()

@@ -40,16 +40,14 @@ def parse_args():
     return args
 
 
-def compute_distance(str1, str2, weights) -> int:
+def compute_distance(str1: str, str2: str, weights: list[int]) -> int:
     """Computes the levenshtein distance between the given strings."""
 
     # if one string is empty, distance equals number of gaps times gap penalty
     if len(str1) == 0:
         return len(str2) * weights["gap"]
-
     if len(str2) == 0:
         return len(str1) * weights["gap"]
-
     if len(str1) == len(str2) == 1:
         return weights["match"] if str1 == str2 else weights["mismatch"]
 
@@ -64,8 +62,10 @@ def compute_distance(str1, str2, weights) -> int:
     )
 
 
-def compute_matrix(word1, word2, weights):
-    """Computes a matrix that tracks Levenshtein distance between every two substrings"""
+def compute_matrix(
+    word1: str, word2: str, weights: list[int]
+) -> tuple[list[list], int]:
+    """Computes a matrix that tracks Levenshtein distance between every two substrings."""
 
     # added words to matrix for an easier output comprehension
     word1 = " " + "-" + word1
@@ -76,9 +76,6 @@ def compute_matrix(word1, word2, weights):
     matrix[0] = [char for char in word2]  # adds second word as first matrix row
     for index, row in enumerate(matrix):  # adds first as first matrix column
         row[0] = word1[index]
-
-    for row in matrix:
-        print(row)
 
     for row in range(1, len(word1)):
         for col in range(1, len(word2)):
@@ -102,7 +99,7 @@ def compute_matrix(word1, word2, weights):
                 )
                 options.append(matrix[row - 1][col - 1] + penalty)
 
-            matrix[row][col] = min(options) # distance is defined as "best case" -> min
+            matrix[row][col] = min(options)  # distance is defined as "best case" -> min
 
     return matrix, matrix[-1][-1]
 
