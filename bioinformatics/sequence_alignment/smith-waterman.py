@@ -43,7 +43,9 @@ def parse_args():
     return args
 
 
-def compute(word1: str, word2: str, weights: list[int]) -> tuple[list[list], dict[int, list[list[str]]]]:
+def compute(
+    word1: str, word2: str, weights: list[int]
+) -> tuple[list[list], dict[int, list[list[str]]]]:
     """Core function that builds the Smith-Waterman matrix, which tracks the local
     sequence alignments for every substring of the strings given in input."""
 
@@ -97,12 +99,14 @@ def compute(word1: str, word2: str, weights: list[int]) -> tuple[list[list], dic
 
 
 def build_solutions(
-    matrix: list[list], previous_coordinates: dict[tuple[int, int], list[tuple[int, int]]], word1: str, word2: str
+    matrix: list[list],
+    previous_coordinates: dict[tuple[int, int], list[tuple[int, int]]],
+    word1: str,
+    word2: str,
 ) -> dict[int, list[tuple[int, int]]]:
-    """Creates a visual representation of the local alignment results.
-    Solutions may be multiple."""
+    """Builds the whole set of solutions of the local alignment of the two strings."""
 
-    def find_starting_coords(matrix: list[list]):
+    def find_starting_coords(matrix: list[list]) -> dict[int, list[tuple[int, int]]]:
         """Returns a dictionary that maps all matrix values to the their respective
         coordinates."""
 
@@ -118,7 +122,13 @@ def build_solutions(
 
         return positions
 
-    def compute_solutions(matrix, previous_coordinates, visited, row, col):
+    def compute_solutions(
+        matrix: list[list],
+        previous_coordinates: dict[tuple[int, int], list[tuple[int, int]]],
+        visited: list[list[bool]],
+        row: int,
+        col: int,
+    ) -> list[list[str]]:
         """\"Backtracks\" the solution, or the path that brings to that specific (row, col) position.
         Many code lines may be unclear, but they only help to make output more readable.
 
@@ -185,12 +195,13 @@ def build_solutions(
 
         return solutions
 
-    solutions = {}
+    solutions = {}  # dictionary that will contain solutions for every alignment score
     coordinates = find_starting_coords(matrix)
     visited = [[False for _ in range(len(word2) + 2)] for _ in range(len(word1) + 2)]
     # matrix to keep track of the visited cells
 
-    for matrix_value in sorted(coordinates.keys(), reverse=True):
+    # adds the final part to the strings
+    for matrix_value in sorted(coordinates.keys(), reverse=True):   
         for row, col in coordinates[matrix_value]:
             if not visited[row][col]:
                 for solution in compute_solutions(
@@ -222,20 +233,27 @@ def print_results(
 ) -> None:
     """Auxiliary function used to format terminal output."""
 
-    if len(results.keys()) == 0:
-        print("no useful solutions were found.")
-    else:
+    if verbose:
+        print(f"local sequence alignment matrix:")  # prints computed matrix
+        for line in matrix:
+            for element in line:
+                if type(element) == str or element >= 0:
+                    print(end=" ")
+                print(f"{element}\t", end="")
+            print()
+
+        i = 0
+
+    if (
+        len(results.keys()) == 0
+    ):  # case where alignment has found no significant results
         if verbose:
-            print(f"local sequence alignment matrix:")  # computed matrix
-            for line in matrix:
-                for element in line:
-                    if type(element) == str or element >= 0:
-                        print(end=" ")
-                    print(f"{element}\t", end="")
-                print()
-
-            i = 0
-
+            print()  # printing a newline for output formatting
+        print("no significant solutions were found.")
+    else:
+        if (
+            verbose
+        ):  # prints all alignment scores found and the related possible solutions
             for alignment_score, solutions in results.items():
                 print(f"\n\nalignment score: {alignment_score}")
 
@@ -244,7 +262,7 @@ def print_results(
                     print(f"\n{i}  -->", end="")
                     for string in solution:
                         print(f"\t{string}")
-        else:
+        else:  # only prints the highest alignment score with its solutions
             print(f"highest alignment score: {max(results.keys())}")
 
             print("solutions:")
