@@ -2,7 +2,7 @@ import argparse as ap
 
 
 """
-The Needleman-Wunsch algorithm is an algorithm used in bioinformatics to align protein
+The Needleman-Wunsch algorithm is an algorithm used in bioinformatics to (globally) align protein
 or nucleotide sequences.
 
 For more information: https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm

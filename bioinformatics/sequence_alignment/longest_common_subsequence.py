@@ -83,7 +83,7 @@ def compute_matrix(word1, word2):
 
             # we choose the direction from which we have the best case (maximum lcs length)
             max_value = max(options)
-            # saving only the diagonal move is present, as saving more is unnecessary
+            # saving only the diagonal move if present, as saving more is unnecessary
             previous[(row, col)] = (
                 (row - 1, col - 1)
                 if (row - 1, col - 1) in options[max_value]
