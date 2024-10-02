@@ -104,7 +104,7 @@ class Graph:
             node = nodes.pop()
             reachable_nodes.append(node)
 
-            for adjacent in graph.get_adjacent_nodes(node):
+            for adjacent in self.get_adjacent_nodes(node):
                 if end_node != None and adjacent == end_node:
                     return [end_node]
 
@@ -138,7 +138,7 @@ class Graph:
         
         for node1 in self.edges:
             for node2 in self.edges:
-                if node1 != node2 and node2 not in graph.get_adjacent_nodes(node1):
+                if node1 != node2 and node2 not in self.get_adjacent_nodes(node1):
                     return False
                 
         return True
