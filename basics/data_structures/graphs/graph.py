@@ -1,78 +1,64 @@
+import abc
+
 from collections import deque
 
 
 class Graph:
+    __metaclass__ = abc.ABCMeta
+
     edges: dict[int, list[tuple[int, int]]] # every key is a node, every value is a list of tuples, where the first element is the other node and the second element is the weight
-    is_weighted: bool
-    weighted_counter: int 
     
     
     def __init__(self):
         self.edges = {}
-        self.is_weighted = False
-        self.weighted_counter = 0
+
+
+    def add_node(self, node: int) -> bool:
+        """
+        Adds a node to the graph.
+        """
+        
+        if node in self.edges:
+            return False
+        
+        self.edges[node] = []
+        return True
 
     
-    def add_edge(self, node1: int, node2: int, weight: int = 1, directed: bool = True) -> bool:
+    def delete_node(self, node) -> bool:
         """
-        Adds the specified edge to the graph. If directed is set to True, also adds the opposite edge.
+        Deletes a node from the graph.
         """
+        if node not in self.edges:
+            return False
         
-        if node1 in self.edges:
-            if node2 in self.edges[node1]:
-                return False
-            
-            self.edges[node1].append((node2, weight))
-            sorted(self.edges[node1])
-        else:    
-            self.edges[node1] = [(node2, weight)]
-            sorted(self.edges)
-
-        if not directed:
-            self.add_edge(node2, node1, weight)
+        for neighbor in self.get_adjacent_nodes(node):
+            self.delete_edge(neighbor, node)
         
-        if weight > 1:
-            self.weighted_counter += 1
-            self.is_weighted = True
-        
+        self.edges.pop(node)
         return True
     
 
-    def delete_edge(self, node1: int, node2: int, directed: bool = True) -> bool:
+    @abc.abstractmethod
+    def add_edge(self, node1: int, node2: int, weight: int = 1) -> bool:
+        """
+        Adds the specified edge to the graph. If directed is set to True, also adds the opposite edge.
+        """
+        return
+    
+
+    @abc.abstractmethod
+    def delete_edge(self, node1: int, node2: int) -> bool:
         """
         Deletes the specified edge from the graph, if it exists.
-        If directed is set to True, it also deletes the opposite edge, if it exists.
         """
-
-        if node1 not in self.edges or node2 not in self.get_adjacent_nodes(node1):
-            return False
-        
-        for edge in self.edges[node1]:
-            if edge[0] == node2:
-                if edge[1] > 1: # decrement weighted edges counter if the one to delete is weighted
-                    self.weighted_counter -= 1
-                    if self.weighted_counter == 0:
-                        self.is_weighted = False    # set graph to not weighted if there is no more weighted edges
-
-                self.edges[node1].remove(edge)  # remove the edge
-
-                if len(self.edges[node1]) == 0: # remove node from dict if it has no more edges
-                    self.edges.pop(node1)
-                
-                if not directed:
-                    self.delete_edge(node2, node1, True)    # also delete opposite diretion
-                
-                return True
-            
-        return False    # return false if loop never found the corresponding edge
-
+        return
 
     
     def get_adjacent_nodes(self, node1: int) -> list[int]:
         """
         Returns the list of nodes the one given as input is adjacent of
         """
-        
         return [edge[0] for edge in self.edges[node1]] if node1 in self.edges else []
     
 
@@ -86,7 +72,7 @@ class Graph:
     def get_reachable_nodes(self, start_node: int, end_node: int = None) -> list[int]:
         """
         Lists all nodes that are reachable from the specified one. Implemented through a BFS algorithm.
-        "end_node" is an optional and internal parameter to improve speed of the "is_connected()" function.
+        "end_node" is an optional and internal parameter to improve speed of the "are_nodes_connected()" function.
         """
 
         if start_node not in self.edges:
@@ -124,9 +110,10 @@ class Graph:
         "Returns whether the graph is connected, i.e. all distincts nodes are connected to each other"
         
         for node1 in self.edges:
+            reachable_nodes: list[int] = self.get_reachable_nodes(node1) 
+
             for node2 in self.edges:
-                if node1 != node2 and not self.are_nodes_connected(node1, node2):
-                    print(f"node {node1} and node {node2} are not connected")
+                if node1 != node2 and node2 not in reachable_nodes:
                     return False
                 
         return True
@@ -137,42 +124,174 @@ class Graph:
         """
         
         for node1 in self.edges:
+            adjacent_nodes: list[int] = self.get_adjacent_nodes(node1)
+            
             for node2 in self.edges:
-                if node1 != node2 and node2 not in self.get_adjacent_nodes(node1):
+                if node1 != node2 and node2 not in adjacent_nodes:
                     return False
                 
         return True
 
+    @abc.abstractmethod
     def is_graph_acyclic(self) -> bool:
         """
-        Returns true if there is no cycle inside the graph, false otherwise
+        Returns True if there is no cycle inside the graph, False otherwise
+        """
+        return 
+
+    def is_subgraph_of(self, other) -> True:
+        """
+        Returns True if the graph is subgraph of another graph given in input
         """
 
-        def is_cyclic(node: int, visited: list[int], current_recursion: list[int]) -> bool:
-            """
-            Helper for the "is_graph_acyclic" function
-            """
-
-            visited.append(node)
-            current_recursion.append(node)
-
-            for neighbor in (self.get_adjacent_nodes(node)):
-                if neighbor not in visited:
-                    if is_cyclic(neighbor, visited, current_recursion):
-                        return True
-                elif neighbor in current_recursion:
-                    return True
-                    
-            current_recursion.remove(node)
+        if self.__class__ != other.__class__:
             return False
         
-        visited: list[int] = [] # list of nodes already visited
-        current_recursion: list[int] = []   # list of nodes in the current recursion branch
+        for node in self.edges:
+            if node not in other.edges:
+                return False
+            
+            for edge in self.edges[node]:
+                if edge not in other.edges[node]:
+                    return False
+                
+        return True
+    
+    def is_tree(self) -> True:
+        """
+        Returns whether the graph is a tree, i.e. it's connected and acyclic
+        """
+
+        return self.is_graph_connected() and self.is_graph_acyclic()
+
+
+
+class DirectedGraph(Graph):
+    def add_edge(self, node1: int, node2: int, weight: int = 1) -> bool:
+        if node1 in self.edges and node2 in self.get_adjacent_nodes(node1):
+            return False
+        
+        if node1 not in self.edges:
+            self.add_node(node1)
+        
+        if node2 not in self.edges:
+            self.add_node(node2)
+
+        self.edges[node1].append((node2, weight))
+        self.edges[node1] = sorted(self.edges[node1])
+        
+        return True
+    
+    def delete_edge(self, node1: int, node2: int) -> bool:
+        if node1 not in self.edges or node2 not in self.get_adjacent_nodes(node1):
+            return False
+        
+        for edge in self.edges[node1]:
+            if edge[0] == node2:
+                self.edges[node1].remove(edge)  # remove the edge
+                
+                return True
+            
+        return False    # return false if loop never found the corresponding edge
+    
+    def is_graph_acyclic(self) -> bool:
+        visited = []
+        recursion_stack = []
+
+        def leads_to_cycle(graph, node: int):
+            visited.append(node)
+            recursion_stack.append(node)
+
+            adjacent_nodes = self.get_adjacent_nodes(node)
+            
+            for neighbor in adjacent_nodes:
+                if neighbor not in visited:
+                    if leads_to_cycle(graph, neighbor):
+                        return True
+                elif neighbor in recursion_stack:
+                    return True
+            
+            recursion_stack.remove(node)
+            return False
 
         for node in self.edges:
-            if not node in visited:
-                if is_cyclic(node, visited, current_recursion):
+            if node not in visited:
+                if leads_to_cycle(self, node):
                     return False
         
         return True
+    
+    
 
+
+class UndirectedGraph(Graph):
+    def add_edge(self, node1: int, node2: int, weight: int = 1, self_called = False) -> bool:
+        if node1 in self.edges:
+            if node2 in self.get_adjacent_nodes(node1):
+                return False
+            
+            self.edges[node1].append((node2, weight))
+            self.edges[node1] = sorted(self.edges[node1])
+        else:    
+            self.edges[node1] = [(node2, weight)]
+            
+        if node2 not in self.edges:
+            self.edges[node2] = []
+
+        if not self_called:
+            self.add_edge(node2, node1, weight=weight, self_called=True)
+
+        return True
+    
+    def delete_edge(self, node1: int, node2: int, self_called: bool = False) -> bool:
+        if node1 not in self.edges or node2 not in self.get_adjacent_nodes(node1):
+            return False
+        
+        for edge in self.edges[node1]:
+            if edge[0] == node2:
+                self.edges[node1].remove(edge)  # remove the edge
+                
+                if not self_called:
+                    self.delete_edge(node2, node1, self_called=True)
+                
+                return True
+
+        return False
+    
+    def is_graph_acyclic(self) -> bool:
+        def leads_to_cycle(graph, node: int, visited: list[int], parent: int = None):
+            visited.append(node)
+
+            adjacent_nodes: list[int] = graph.get_adjacent_nodes(node)
+            if parent in adjacent_nodes:
+                adjacent_nodes.remove(parent)
+
+            for neighbor in adjacent_nodes:
+                if neighbor in visited or leads_to_cycle(graph, neighbor, visited, parent=node):
+                    return True
+
+            return False
+        
+        visited: list[int] = []
+
+        for node in self.edges:
+            if node not in visited:
+                if leads_to_cycle(self, node, visited):
+                    return False
+        
+        return True
+    
+
+
+ug = DirectedGraph()
+
+ug.add_edge(1,2)
+ug.add_edge(1,4)
+ug.add_edge(4,2)
+ug.add_edge(2,3)
+ug.add_edge(3,5)
+ug.add_edge(5,4)
+
+print(ug.edges)
+
+print(ug.is_graph_acyclic())
