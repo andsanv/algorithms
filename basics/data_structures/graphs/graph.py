@@ -1,4 +1,5 @@
 import abc
+import random
 
 from collections import deque
 
@@ -15,7 +16,7 @@ class Graph:
 
     def add_node(self, node: int) -> bool:
         """
-        Adds a node to the graph.
+        Adds a node to the graph
         """
         
         if node in self.edges:
@@ -27,7 +28,7 @@ class Graph:
     
     def delete_node(self, node) -> bool:
         """
-        Deletes a node from the graph.
+        Deletes a node from the graph
         """
         if node not in self.edges:
             return False
@@ -37,6 +38,13 @@ class Graph:
         
         self.edges.pop(node)
         return True
+    
+    def get_nodes(self) -> list[int]:
+        """
+        Returns all nodes of the graph as a list
+        """
+        
+        return [node for node in self.edges]
     
 
     @abc.abstractmethod
@@ -68,18 +76,41 @@ class Graph:
         """
         return node1 in self.edges and node2 in self.get_adjacent_nodes(node1)
     
+    def get_outcoming_cut(self, starting_nodes: list[int]) -> dict[int, list[tuple[int, int]]]:
+        """
+        Computes and lists all edges connecting set of "starting_nodes" to the rest of the graph nodes.
+        Output is a dict from a node to a list of edges, containing the end node and the weight
+        """
 
-    def get_reachable_nodes(self, start_node: int, end_node: int = None) -> list[int]:
+        if any(map(lambda node: node not in self.get_nodes(), starting_nodes)):
+            return []
+
+        outcoming_cut: dict[int, list[tuple[int, int]]] = {}
+
+        for node in starting_nodes:
+            edges = list(filter(lambda x : x[0] not in starting_nodes, self.edges[node]))
+            
+            if len(edges) > 0:
+                outcoming_cut[node] = edges
+
+        return outcoming_cut
+    
+    def get_incoming_cut(self, starting_nodes: list[int]) -> dict[int, list[tuple[int, int]]]:
+        """
+        Computes and lists all edges connecting all other nodes of the graph to the "starting_nodes".
+        Output is a dict from a node to a list of edges, containing the end node and the weight
+        """
+
+        return self.get_outcoming_cut(list(filter(lambda node: node not in starting_nodes, self.get_nodes())))
+
+
+    def get_reachable_nodes(self, start_node: int) -> list[int]:
         """
         Lists all nodes that are reachable from the specified one. Implemented through a BFS algorithm.
-        "end_node" is an optional and internal parameter to improve speed of the "are_nodes_connected()" function.
         """
 
         if start_node not in self.edges:
             return []
-        
-        if start_node == end_node:
-            return [end_node]
 
         reachable_nodes = []
         
@@ -91,13 +122,10 @@ class Graph:
             reachable_nodes.append(node)
 
             for adjacent in self.get_adjacent_nodes(node):
-                if end_node != None and adjacent == end_node:
-                    return [end_node]
-
                 if adjacent not in reachable_nodes and adjacent not in nodes:
                     nodes.append(adjacent)
 
-        return sorted(reachable_nodes) if not end_node else []
+        return sorted(reachable_nodes)
     
     def are_nodes_connected(self, node1: int, node2: int = None) -> bool:
         """
@@ -157,12 +185,32 @@ class Graph:
                 
         return True
     
-    def is_tree(self) -> True:
+    def is_tree(self) -> bool:
         """
         Returns whether the graph is a tree, i.e. it's connected and acyclic
         """
 
         return self.is_graph_connected() and self.is_graph_acyclic()
+    
+    def is_spanning_tree_of(self, other) -> bool:
+        """
+        Returns whether the graph is a spanning tree, i.e. if it is a tree and it contains all nodes\"
+        """
+        
+        for edge in self.edges:
+            if edge not in other.edges:
+                return False
+        
+        return self.is_tree()
+    
+    #def get_spanning_tree(self):
+    #    """
+    #    Returns a spanning tree of self. Implemented through Prim's algorithm
+    #    """
+#
+    #    start_node: int = [edge[0] for edge in self.edges][random.randint(0, len(self.edges))]
+    #    sorted(self.edges[start_node]):
+
 
 
 
@@ -280,18 +328,3 @@ class UndirectedGraph(Graph):
                     return False
         
         return True
-    
-
-
-ug = DirectedGraph()
-
-ug.add_edge(1,2)
-ug.add_edge(1,4)
-ug.add_edge(4,2)
-ug.add_edge(2,3)
-ug.add_edge(3,5)
-ug.add_edge(5,4)
-
-print(ug.edges)
-
-print(ug.is_graph_acyclic())
